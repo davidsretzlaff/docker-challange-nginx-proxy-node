@@ -10,15 +10,15 @@ services:
       context: ./node
       dockerfile: Dockerfile
     image: davidsretzlaff/node
-    container_name: app
-    #entrypoint: dockerize -wait tcp://db:3306 -timeout 20s docker-entrypoint.sh
+    container_name: node
+    entrypoint: dockerize -wait tcp://db:3306 -timeout 20s docker-entrypoint.sh node index.js # await for the db to be ready.
     networks:
       - node-network
-    # volumes:
-    #   - ./node:/usr/src/app
     tty: true    
-    # depends_on:
-    #  - db
+    ports: 
+      - "3000:3000"
+    depends_on:
+      - db # await for the db to be ready to node build.
 
   nginx: 
     build:
@@ -30,20 +30,25 @@ services:
       -  node-network
     ports:
      - "8080:80"
+    depends_on:
+      - db
+      - app
 
-  # db:
-  #   image: mysql:5.7
-  #   command: --innodb-use-native-aio=0
-  #   container_name: db
-  #   restart: always
-  #   tty: true
-  #   volumes: 
-  #     - ./mysql:/var/lib/mysql
-  #   environment:
-  #     - MYSQL_DATABASE=nodedb
-  #     - MYSQL_ROOT_PASSWORD=root
-  #   networks: 
-  #     - node-network
+  db:
+      image: mysql:5.7
+      command: --innodb-use-native-aio=0
+      container_name: db
+      restart: always
+      tty: true
+      volumes: 
+        - ./mysql:/var/lib/mysql # map the folder .mysql from host to /var/lib/mysql of container
+      environment:
+        - MYSQL_DATABASE=fullcycle
+        - MYSQL_ROOT_PASSWORD=root
+      ports:
+        - "3306:3306"
+      networks: 
+        - node-network
 
 networks:
  node-network:
